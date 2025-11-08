@@ -1,15 +1,55 @@
 const errorLabel = document.querySelector("#error");
 
-const tmpVecA = new Float32Array(3);
-const tmpVecB = new Float32Array(3);
-const tmpVecC = new Float32Array(3);
+const cubeVertices = new Float32Array([
+  // front
+  -1, -1, 1,
+  1, -1, 1,
+  1, 1, 1,
+  -1, -1, 1,
+  1, 1, 1,
+  -1, 1, 1,
+  // back
+  -1, -1, -1,
+  -1, 1, -1,
+  1, 1, -1,
+  -1, -1, -1,
+  1, 1, -1,
+  1, -1, -1,
+  // top
+  -1, 1, -1,
+  -1, 1, 1,
+  1, 1, 1,
+  -1, 1, -1,
+  1, 1, 1,
+  1, 1, -1,
+  // bottom
+  -1, -1, -1,
+  1, -1, -1,
+  1, -1, 1,
+  -1, -1, -1,
+  1, -1, 1,
+  -1, -1, 1,
+  // right
+  1, -1, -1,
+  1, 1, -1,
+  1, 1, 1,
+  1, -1, -1,
+  1, 1, 1,
+  1, -1, 1,
+  // left
+  -1, -1, -1,
+  -1, -1, 1,
+  -1, 1, 1,
+  -1, -1, -1,
+  -1, 1, 1,
+  -1, 1, -1,
+]);
 
-function createMat4() {
-  const out = new Float32Array(16);
-  out[0] = 1;
-  out[5] = 1;
-  out[10] = 1;
-  out[15] = 1;
+function mat4Identity(out) {
+  out[0] = 1; out[1] = 0; out[2] = 0; out[3] = 0;
+  out[4] = 0; out[5] = 1; out[6] = 0; out[7] = 0;
+  out[8] = 0; out[9] = 0; out[10] = 1; out[11] = 0;
+  out[12] = 0; out[13] = 0; out[14] = 0; out[15] = 1;
   return out;
 }
 
@@ -24,145 +64,135 @@ function mat4Multiply(out, a, b) {
   const b20 = b[8], b21 = b[9], b22 = b[10], b23 = b[11];
   const b30 = b[12], b31 = b[13], b32 = b[14], b33 = b[15];
 
-  out[0] = a00 * b00 + a10 * b01 + a20 * b02 + a30 * b03;
-  out[1] = a01 * b00 + a11 * b01 + a21 * b02 + a31 * b03;
-  out[2] = a02 * b00 + a12 * b01 + a22 * b02 + a32 * b03;
-  out[3] = a03 * b00 + a13 * b01 + a23 * b02 + a33 * b03;
-  out[4] = a00 * b10 + a10 * b11 + a20 * b12 + a30 * b13;
-  out[5] = a01 * b10 + a11 * b11 + a21 * b12 + a31 * b13;
-  out[6] = a02 * b10 + a12 * b11 + a22 * b12 + a32 * b13;
-  out[7] = a03 * b10 + a13 * b11 + a23 * b12 + a33 * b13;
-  out[8] = a00 * b20 + a10 * b21 + a20 * b22 + a30 * b23;
-  out[9] = a01 * b20 + a11 * b21 + a21 * b22 + a31 * b23;
-  out[10] = a02 * b20 + a12 * b21 + a22 * b22 + a32 * b23;
-  out[11] = a03 * b20 + a13 * b21 + a23 * b22 + a33 * b23;
-  out[12] = a00 * b30 + a10 * b31 + a20 * b32 + a30 * b33;
-  out[13] = a01 * b30 + a11 * b31 + a21 * b32 + a31 * b33;
-  out[14] = a02 * b30 + a12 * b31 + a22 * b32 + a32 * b33;
-  out[15] = a03 * b30 + a13 * b31 + a23 * b32 + a33 * b33;
+  out[0] = a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30;
+  out[1] = a00 * b01 + a01 * b11 + a02 * b21 + a03 * b31;
+  out[2] = a00 * b02 + a01 * b12 + a02 * b22 + a03 * b32;
+  out[3] = a00 * b03 + a01 * b13 + a02 * b23 + a03 * b33;
+
+  out[4] = a10 * b00 + a11 * b10 + a12 * b20 + a13 * b30;
+  out[5] = a10 * b01 + a11 * b11 + a12 * b21 + a13 * b31;
+  out[6] = a10 * b02 + a11 * b12 + a12 * b22 + a13 * b32;
+  out[7] = a10 * b03 + a11 * b13 + a12 * b23 + a13 * b33;
+
+  out[8] = a20 * b00 + a21 * b10 + a22 * b20 + a23 * b30;
+  out[9] = a20 * b01 + a21 * b11 + a22 * b21 + a23 * b31;
+  out[10] = a20 * b02 + a21 * b12 + a22 * b22 + a23 * b32;
+  out[11] = a20 * b03 + a21 * b13 + a22 * b23 + a23 * b33;
+
+  out[12] = a30 * b00 + a31 * b10 + a32 * b20 + a33 * b30;
+  out[13] = a30 * b01 + a31 * b11 + a32 * b21 + a33 * b31;
+  out[14] = a30 * b02 + a31 * b12 + a32 * b22 + a33 * b32;
+  out[15] = a30 * b03 + a31 * b13 + a32 * b23 + a33 * b33;
   return out;
 }
 
-function mat4FromXRotation(out, rad) {
-  const s = Math.sin(rad);
-  const c = Math.cos(rad);
-
-  out[0] = 1;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 0;
-  out[4] = 0;
-  out[5] = c;
-  out[6] = s;
-  out[7] = 0;
-  out[8] = 0;
-  out[9] = -s;
-  out[10] = c;
-  out[11] = 0;
-  out[12] = 0;
-  out[13] = 0;
-  out[14] = 0;
-  out[15] = 1;
-  return out;
-}
-
-function mat4FromYRotation(out, rad) {
-  const s = Math.sin(rad);
-  const c = Math.cos(rad);
-
-  out[0] = c;
-  out[1] = 0;
-  out[2] = -s;
-  out[3] = 0;
-  out[4] = 0;
-  out[5] = 1;
-  out[6] = 0;
-  out[7] = 0;
-  out[8] = s;
-  out[9] = 0;
-  out[10] = c;
-  out[11] = 0;
-  out[12] = 0;
-  out[13] = 0;
-  out[14] = 0;
-  out[15] = 1;
-  return out;
-}
-
-function normalizeVec3(out, v) {
-  const len = Math.hypot(v[0], v[1], v[2]);
-  if (len > 0.00001) {
-    out[0] = v[0] / len;
-    out[1] = v[1] / len;
-    out[2] = v[2] / len;
-  }
-  return out;
-}
-
-function subtractVec3(out, a, b) {
-  out[0] = a[0] - b[0];
-  out[1] = a[1] - b[1];
-  out[2] = a[2] - b[2];
-  return out;
-}
-
-function crossVec3(out, a, b) {
-  const ax = a[0], ay = a[1], az = a[2];
-  const bx = b[0], by = b[1], bz = b[2];
-  out[0] = ay * bz - az * by;
-  out[1] = az * bx - ax * bz;
-  out[2] = ax * by - ay * bx;
-  return out;
-}
-
-function dotVec3(a, b) {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
-function mat4LookAt(out, eye, center, up) {
-  const f = normalizeVec3(tmpVecA, subtractVec3(tmpVecA, center, eye));
-  const s = normalizeVec3(tmpVecB, crossVec3(tmpVecB, f, up));
-  const u = crossVec3(tmpVecC, s, f);
-
-  out[0] = s[0];
-  out[1] = s[1];
-  out[2] = s[2];
-  out[3] = 0;
-  out[4] = u[0];
-  out[5] = u[1];
-  out[6] = u[2];
-  out[7] = 0;
-  out[8] = -f[0];
-  out[9] = -f[1];
-  out[10] = -f[2];
-  out[11] = 0;
-  out[12] = -dotVec3(s, eye);
-  out[13] = -dotVec3(u, eye);
-  out[14] = dotVec3(f, eye);
-  out[15] = 1;
+function mat4Scale(out, s) {
+  mat4Identity(out);
+  out[0] = s;
+  out[5] = s;
+  out[10] = s;
   return out;
 }
 
 function mat4Perspective(out, fovy, aspect, near, far) {
   const f = 1.0 / Math.tan(fovy / 2);
+  const nf = 1 / (near - far);
+
   out[0] = f / aspect;
   out[1] = 0;
   out[2] = 0;
   out[3] = 0;
+
   out[4] = 0;
   out[5] = f;
   out[6] = 0;
   out[7] = 0;
+
   out[8] = 0;
   out[9] = 0;
-  out[10] = (far + near) / (near - far);
+  out[10] = (far + near) * nf;
   out[11] = -1;
+
   out[12] = 0;
   out[13] = 0;
-  out[14] = (2 * far * near) / (near - far);
+  out[14] = 2 * far * near * nf;
   out[15] = 0;
   return out;
 }
+
+function mat4LookAt(out, eye, center, up) {
+  const zx = eye[0] - center[0];
+  const zy = eye[1] - center[1];
+  const zz = eye[2] - center[2];
+  let len = Math.hypot(zx, zy, zz);
+
+  let zxN = zx;
+  let zyN = zy;
+  let zzN = zz;
+  if (len > 0.00001) {
+    zxN /= len;
+    zyN /= len;
+    zzN /= len;
+  }
+
+  let xx = up[1] * zzN - up[2] * zyN;
+  let xy = up[2] * zxN - up[0] * zzN;
+  let xz = up[0] * zyN - up[1] * zxN;
+  len = Math.hypot(xx, xy, xz);
+  if (len > 0.00001) {
+    xx /= len;
+    xy /= len;
+    xz /= len;
+  }
+
+  let yx = zyN * xz - zzN * xy;
+  let yy = zzN * xx - zxN * xz;
+  let yz = zxN * xy - zyN * xx;
+  len = Math.hypot(yx, yy, yz);
+  if (len > 0.00001) {
+    yx /= len;
+    yy /= len;
+    yz /= len;
+  }
+
+  out[0] = xx; out[1] = xy; out[2] = xz; out[3] = 0;
+  out[4] = yx; out[5] = yy; out[6] = yz; out[7] = 0;
+  out[8] = zxN; out[9] = zyN; out[10] = zzN; out[11] = 0;
+  out[12] = -(xx * eye[0] + xy * eye[1] + xz * eye[2]);
+  out[13] = -(yx * eye[0] + yy * eye[1] + yz * eye[2]);
+  out[14] = -(zxN * eye[0] + zyN * eye[1] + zzN * eye[2]);
+  out[15] = 1;
+  return out;
+}
+
+function mat4RotateX(out, rad) {
+  mat4Identity(out);
+  const s = Math.sin(rad);
+  const c = Math.cos(rad);
+  out[5] = c;
+  out[6] = s;
+  out[9] = -s;
+  out[10] = c;
+  return out;
+}
+
+function mat4RotateY(out, rad) {
+  mat4Identity(out);
+  const s = Math.sin(rad);
+  const c = Math.cos(rad);
+  out[0] = c;
+  out[2] = -s;
+  out[8] = s;
+  out[10] = c;
+  return out;
+}
+
+const effectState = {
+  scalePulse: false,
+  colorCycle: false,
+  chromatic: false,
+  mosaic: false,
+};
 
 async function initWebGPU() {
   if (!navigator.gpu) {
@@ -180,97 +210,112 @@ async function initWebGPU() {
   const device = await adapter.requestDevice();
   const format = navigator.gpu.getPreferredCanvasFormat();
 
-  const devicePixelRatio = window.devicePixelRatio || 1;
-  canvas.width = Math.floor(canvas.clientWidth * devicePixelRatio);
-  canvas.height = Math.floor(canvas.clientHeight * devicePixelRatio);
+  let depthTexture;
+  let depthTextureView;
 
-  context.configure({
-    device,
-    format,
-    alphaMode: "premultiplied",
-  });
+  function configureContext() {
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.round(canvas.clientWidth * dpr));
+    const height = Math.max(1, Math.round(canvas.clientHeight * dpr));
 
-  const cubeVertices = new Float32Array([
-    // Front (red)
-    -1, -1, 1, 1, 0, 0,
-    1, -1, 1, 1, 0, 0,
-    1, 1, 1, 1, 0, 0,
-    -1, -1, 1, 1, 0, 0,
-    1, 1, 1, 1, 0, 0,
-    -1, 1, 1, 1, 0, 0,
-    // Back (green)
-    -1, -1, -1, 0, 1, 0,
-    -1, 1, -1, 0, 1, 0,
-    1, 1, -1, 0, 1, 0,
-    -1, -1, -1, 0, 1, 0,
-    1, 1, -1, 0, 1, 0,
-    1, -1, -1, 0, 1, 0,
-    // Top (blue)
-    -1, 1, -1, 0, 0, 1,
-    -1, 1, 1, 0, 0, 1,
-    1, 1, 1, 0, 0, 1,
-    -1, 1, -1, 0, 0, 1,
-    1, 1, 1, 0, 0, 1,
-    1, 1, -1, 0, 0, 1,
-    // Bottom (yellow)
-    -1, -1, -1, 1, 1, 0,
-    1, -1, -1, 1, 1, 0,
-    1, -1, 1, 1, 1, 0,
-    -1, -1, -1, 1, 1, 0,
-    1, -1, 1, 1, 1, 0,
-    -1, -1, 1, 1, 1, 0,
-    // Right (magenta)
-    1, -1, -1, 1, 0, 1,
-    1, 1, -1, 1, 0, 1,
-    1, 1, 1, 1, 0, 1,
-    1, -1, -1, 1, 0, 1,
-    1, 1, 1, 1, 0, 1,
-    1, -1, 1, 1, 0, 1,
-    // Left (cyan)
-    -1, -1, -1, 0, 1, 1,
-    -1, -1, 1, 0, 1, 1,
-    -1, 1, 1, 0, 1, 1,
-    -1, -1, -1, 0, 1, 1,
-    -1, 1, 1, 0, 1, 1,
-    -1, 1, -1, 0, 1, 1,
-  ]);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    context.configure({
+      device,
+      format,
+      alphaMode: "premultiplied",
+    });
+
+    if (depthTexture) {
+      depthTexture.destroy();
+    }
+
+    depthTexture = device.createTexture({
+      size: [canvas.width, canvas.height, 1],
+      format: "depth24plus",
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    depthTextureView = depthTexture.createView();
+  }
+
+  configureContext();
+  window.addEventListener("resize", configureContext);
 
   const vertexBuffer = device.createBuffer({
     size: cubeVertices.byteLength,
     usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    mappedAtCreation: true,
   });
-  device.queue.writeBuffer(vertexBuffer, 0, cubeVertices);
+  new Float32Array(vertexBuffer.getMappedRange()).set(cubeVertices);
+  vertexBuffer.unmap();
 
+  const matrixBuffer = new Float32Array(16);
+  const colorData = new Float32Array([0.2, 0.8, 0.9, 1.0]);
+  const colorScratch = new Float32Array(4);
+  const effectsData = new Float32Array([0, 0, 0, 0]);
+  const uniformBufferSize = (16 + 4 + 4) * 4;
   const uniformBuffer = device.createBuffer({
-    size: 64,
+    size: uniformBufferSize,
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
+  device.queue.writeBuffer(uniformBuffer, 64, colorData);
+  device.queue.writeBuffer(uniformBuffer, 80, effectsData);
 
   const shaderModule = device.createShaderModule({
     code: /* wgsl */ `
       struct Uniforms {
-        mvp : mat4x4<f32>,
+        mvp : mat4x4f,
+        color : vec4f,
+        effects : vec4f,
       };
 
       @group(0) @binding(0)
-      var<uniform> uniforms : Uniforms;
+      var<uniform> u : Uniforms;
 
-      struct VertexOutput {
+      struct VSOut {
         @builtin(position) position : vec4f,
-        @location(0) color : vec3f,
+        @location(0) uv : vec2f,
       };
 
       @vertex
-      fn vs_main(@location(0) position : vec3f, @location(1) color : vec3f) -> VertexOutput {
-          var output : VertexOutput;
-          output.position = uniforms.mvp * vec4f(position, 1.0);
-          output.color = color;
+      fn vs_main(@location(0) position : vec3f) -> VSOut {
+          var output : VSOut;
+          let clip = u.mvp * vec4f(position, 1.0);
+          output.position = clip;
+          output.uv = clip.xy / clip.w * 0.5 + vec2f(0.5, 0.5);
           return output;
       }
 
       @fragment
-      fn fs_main(@location(0) color : vec3f) -> @location(0) vec4f {
-          return vec4f(color, 1.0);
+      fn fs_main(@location(0) uv : vec2f) -> @location(0) vec4f {
+          var color = u.color;
+          let colorShift = u.effects.x;
+          let chroma = u.effects.y;
+          let mosaic = u.effects.z;
+          let time = u.effects.w;
+
+          if (colorShift > 0.5) {
+            let wave = 0.5 + 0.5 * sin(time * 2.0 + uv.x * 12.0 + uv.y * 6.0);
+            color.rgb = mix(color.rgb, color.rgb.bgr, wave * 0.6);
+          }
+
+          if (chroma > 0.0) {
+            let aberr = (uv - vec2f(0.5, 0.5)) * chroma * 0.3;
+            color.r = clamp(color.r + aberr.x, 0.0, 1.0);
+            color.b = clamp(color.b - aberr.y, 0.0, 1.0);
+          }
+
+          if (mosaic > 0.0) {
+            let blockCount = mix(8.0, 96.0, clamp(mosaic, 0.0, 1.0));
+            let block = floor(uv * blockCount) / blockCount;
+            let noise = fract(sin(dot(block, vec2f(12.9898, 78.233))) * 43758.5453);
+            color.rgb *= 0.75 + noise * 0.25;
+          }
+
+          return color;
       }
     `,
   });
@@ -282,15 +327,8 @@ async function initWebGPU() {
       entryPoint: "vs_main",
       buffers: [
         {
-          arrayStride: Float32Array.BYTES_PER_ELEMENT * 6,
-          attributes: [
-            { shaderLocation: 0, offset: 0, format: "float32x3" },
-            {
-              shaderLocation: 1,
-              offset: Float32Array.BYTES_PER_ELEMENT * 3,
-              format: "float32x3",
-            },
-          ],
+          arrayStride: 12,
+          attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }],
         },
       ],
     },
@@ -299,18 +337,15 @@ async function initWebGPU() {
       entryPoint: "fs_main",
       targets: [{ format }],
     },
-    primitive: { topology: "triangle-list", cullMode: "back" },
+    primitive: {
+      topology: "triangle-list",
+      cullMode: "back",
+    },
     depthStencil: {
       format: "depth24plus",
       depthWriteEnabled: true,
       depthCompare: "less",
     },
-  });
-
-  const depthTexture = device.createTexture({
-    size: [canvas.width, canvas.height, 1],
-    format: "depth24plus",
-    usage: GPUTextureUsage.RENDER_ATTACHMENT,
   });
 
   const renderPassDescriptor = {
@@ -323,9 +358,9 @@ async function initWebGPU() {
       },
     ],
     depthStencilAttachment: {
-      view: depthTexture.createView(),
+      view: depthTextureView,
       depthLoadOp: "clear",
-      depthClearValue: 1,
+      depthClearValue: 1.0,
       depthStoreOp: "store",
     },
   };
@@ -335,52 +370,112 @@ async function initWebGPU() {
     entries: [
       {
         binding: 0,
-        resource: {
-          buffer: uniformBuffer,
-        },
+        resource: { buffer: uniformBuffer },
       },
     ],
   });
 
-  const modelMatrix = createMat4();
-  const viewMatrix = createMat4();
-  const projectionMatrix = createMat4();
-  const viewProjectionMatrix = createMat4();
-  const rotationXMatrix = createMat4();
-  const rotationYMatrix = createMat4();
+  const projectionMatrix = new Float32Array(16);
+  const viewMatrix = new Float32Array(16);
+  const modelMatrix = new Float32Array(16);
+  const rotXMatrix = new Float32Array(16);
+  const rotYMatrix = new Float32Array(16);
+  const scaleMatrix = new Float32Array(16);
+  const tempMatrix = new Float32Array(16);
+  mat4LookAt(viewMatrix, [0, 0, 4], [0, 0, 0], [0, 1, 0]);
 
-  const eye = new Float32Array([2.5, 2.5, 4]);
-  const center = new Float32Array([0, 0, 0]);
-  const up = new Float32Array([0, 1, 0]);
+  function writeEffects(timeSeconds) {
+    effectsData[0] = effectState.colorCycle ? 1 : 0;
+    effectsData[1] = effectState.chromatic ? 1 : 0;
+    effectsData[2] = effectState.mosaic ? 1 : 0;
+    effectsData[3] = timeSeconds;
+    device.queue.writeBuffer(uniformBuffer, 80, effectsData);
+  }
+
+  function updateUniforms(time) {
+    const timeSeconds = time * 0.001;
+    const aspect = canvas.width / canvas.height;
+    mat4Perspective(projectionMatrix, Math.PI / 4, aspect, 0.1, 100);
+
+    const angle = timeSeconds;
+    mat4RotateX(rotXMatrix, angle * 0.7);
+    mat4RotateY(rotYMatrix, angle);
+
+    mat4Multiply(tempMatrix, rotYMatrix, rotXMatrix);
+
+    const scaleValue = effectState.scalePulse ? 1 + 0.35 * (Math.sin(timeSeconds * 2.0) * 0.5 + 0.5) : 1;
+    mat4Scale(scaleMatrix, scaleValue);
+    mat4Multiply(modelMatrix, tempMatrix, scaleMatrix);
+
+    mat4Multiply(tempMatrix, viewMatrix, modelMatrix);
+    mat4Multiply(matrixBuffer, projectionMatrix, tempMatrix);
+    device.queue.writeBuffer(uniformBuffer, 0, matrixBuffer);
+
+    writeEffects(timeSeconds);
+  }
+
+  function updateColorFromPointer(event) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+    colorScratch[0] = Math.min(Math.max(x, 0), 1);
+    colorScratch[1] = Math.min(Math.max(1 - y, 0), 1);
+    colorScratch[2] = 0.8;
+    colorScratch[3] = 1.0;
+    device.queue.writeBuffer(uniformBuffer, 64, colorScratch);
+  }
+
+  function resetColor() {
+    device.queue.writeBuffer(uniformBuffer, 64, colorData);
+  }
+
+  canvas.addEventListener("pointermove", updateColorFromPointer);
+  canvas.addEventListener("pointerleave", resetColor);
+  canvas.addEventListener("pointerdown", updateColorFromPointer);
+
+  function toggleEffect(code) {
+    switch (code) {
+      case "Digit1":
+        effectState.scalePulse = !effectState.scalePulse;
+        break;
+      case "Digit2":
+        effectState.colorCycle = !effectState.colorCycle;
+        break;
+      case "Digit3":
+        effectState.chromatic = !effectState.chromatic;
+        break;
+      case "Digit4":
+        effectState.mosaic = !effectState.mosaic;
+        break;
+      default:
+        return;
+    }
+  }
+
+  window.addEventListener("keydown", (event) => {
+    if (event.repeat) return;
+    toggleEffect(event.code);
+  });
 
   function frame(time) {
+    updateUniforms(time);
+
     renderPassDescriptor.colorAttachments[0].view = context.getCurrentTexture().createView();
-
-    mat4FromXRotation(rotationXMatrix, time * 0.0005 * Math.PI * 2);
-    mat4FromYRotation(rotationYMatrix, time * 0.0003 * Math.PI * 2);
-    mat4Multiply(modelMatrix, rotationYMatrix, rotationXMatrix);
-
-    mat4LookAt(viewMatrix, eye, center, up);
-    const aspect = canvas.width / canvas.height;
-    mat4Perspective(projectionMatrix, (45 * Math.PI) / 180, aspect, 0.1, 100);
-    mat4Multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
-    mat4Multiply(modelMatrix, viewProjectionMatrix, modelMatrix);
-
-    device.queue.writeBuffer(uniformBuffer, 0, modelMatrix);
+    renderPassDescriptor.depthStencilAttachment.view = depthTextureView;
 
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginRenderPass(renderPassDescriptor);
     pass.setPipeline(pipeline);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.setBindGroup(0, bindGroup);
-    pass.draw(cubeVertices.length / 6);
+    pass.draw(cubeVertices.length / 3);
     pass.end();
 
     device.queue.submit([encoder.finish()]);
     requestAnimationFrame(frame);
   }
 
-  requestAnimationFrame(frame);
+  frame(0);
 }
 
 initWebGPU().catch((err) => {
